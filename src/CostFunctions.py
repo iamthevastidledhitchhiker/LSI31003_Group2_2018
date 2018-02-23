@@ -6,7 +6,7 @@ Created on Jul 13, 2016
 import sys
 from keras import backend as K
 import numpy as np
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
 IntType = 'int32'
 FloatType = 'float32'
@@ -27,7 +27,7 @@ class MMD:
     kernel = None
     scales = None
     weights = None
-    
+
     def __init__(self,
                  MMDLayer,
                  MMDTargetTrain,
@@ -45,8 +45,8 @@ class MMD:
                 distances,dummy = nbrs.kneighbors(sample)
                 #nearest neighbor is the point so we need to exclude it
                 med[ii]=np.median(distances[:,1:n_neighbors])
-            med = np.median(med)  
-            scales = [med/2, med, med*2] # CyTOF    
+            med = np.median(med)
+            scales = [med/2, med, med*2] # CyTOF
             print(scales)
         scales = K.variable(value=np.asarray(scales))
         if weights == None:
@@ -63,19 +63,19 @@ class MMD:
         self.kernel = self.RaphyKernel
         self.scales = scales
         self.weights = weights
-        
-    
+
+
     #calculate the raphy kernel applied to all entries in a pairwise distance matrix
     def RaphyKernel(self,X,Y):
         #expand dist to a 1xnxm tensor where the 1 is broadcastable
-        sQdist = K.expand_dims(squaredDistance(X,Y),0) 
+        sQdist = K.expand_dims(squaredDistance(X,Y),0)
         #expand scales into a px1x1 tensor so we can do an element wise exponential
         self.scales = K.expand_dims(K.expand_dims(self.scales,-1),-1)
         #expand scales into a px1x1 tensor so we can do an element wise exponential
         self.weights = K.expand_dims(K.expand_dims(self.weights,-1),-1)
         #calculated the kernal for each scale weight on the distance matrix and sum them up
         return K.sum(self.weights*K.exp(-sQdist / (K.pow(self.scales,2))),0)
-    
+
     #Calculate the MMD cost
     def cost(self,source, target):
         #calculate the 3 MMD terms
@@ -91,17 +91,17 @@ class MMD:
     def KerasCost(self,y_true, y_pred):
         #create a random subsampling of the target instances for the test set
         #This is rarely going to hit the last entry
-        sample = K.cast(K.round(K.random_uniform_variable(shape=tuple([self.MMDTargetSampleSize]), low=0, 
+        sample = K.cast(K.round(K.random_uniform_variable(shape=tuple([self.MMDTargetSampleSize]), low=0,
                                                  high=self.MMDTargetTrainSize-1)),IntType)
         #this is a subset operation (not a very pretty way to do it)
         MMDTargetSampleTrain = K.gather(self.MMDTargetTrain,sample)
         #do the same for the validation set
-        sample = K.cast(K.round(K.random_uniform_variable(shape=tuple([self.MMDTargetSampleSize]), low=0, 
+        sample = K.cast(K.round(K.random_uniform_variable(shape=tuple([self.MMDTargetSampleSize]), low=0,
                                                  high=self.MMDTargetValidationSize-1)),IntType)
         #and the subset operation
         MMDTargetSampleValidation = K.gather(self.MMDTargetValidation,sample)
         #create the sample based on whether we are in training or validation steps
-        MMDtargetSample = K.in_train_phase(MMDTargetSampleTrain, MMDTargetSampleValidation) 
+        MMDtargetSample = K.in_train_phase(MMDTargetSampleTrain, MMDTargetSampleValidation)
         #return the MMD cost for this subset
         ret= self.cost(self.MMDLayer,MMDtargetSample)
         #pretty dumb but y_treu has to be in the cost for keras to not barf when cleaning up
