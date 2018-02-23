@@ -7,7 +7,7 @@ Created on Jul 28, 2016
 
 import numpy as np
 from numpy import genfromtxt
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 import sklearn.preprocessing as prep
 
 
@@ -22,27 +22,27 @@ def preProcessCytofData(data):
     return np.log(1+data)
 
 def preProcessSamplesCytofData(samples):
-    for i in range(len(samples)):    
+    for i in range(len(samples)):
         samples[i].X = preProcessCytofData(samples[i].X)
         #s = Sample(preProcessCytofData(samples[i].X), samples[i].y)
-    return samples  
+    return samples
 
-    
-def getCytofMMDDataFromCsv(sample1Path, sample1LabelsPath, sample2Path, sample2LabelsPath, iEqualizeMixtureCoeffs): 
-    print('loading data') 
+
+def getCytofMMDDataFromCsv(sample1Path, sample1LabelsPath, sample2Path, sample2LabelsPath, iEqualizeMixtureCoeffs):
+    print('loading data')
     sample1 = genfromtxt(sample1Path, delimiter=',', skip_header=0)
-    sample2 = genfromtxt(sample2Path, delimiter=',', skip_header=0) 
+    sample2 = genfromtxt(sample2Path, delimiter=',', skip_header=0)
     sample1Labels = genfromtxt(sample1LabelsPath, delimiter=',').astype(int)
     sample2Labels = genfromtxt(sample2LabelsPath, delimiter=',').astype(int)
-    target, target_test, targetLabels_train, targetLabels_test = train_test_split(sample1, 
-                                                                            sample1Labels, test_size=0.3) 
-    source, source_test, sourceLabels, sourceLabels_test = train_test_split(sample2, 
-                                                                            sample2Labels, test_size=0.3)  
+    target, target_test, targetLabels_train, targetLabels_test = train_test_split(sample1,
+                                                                            sample1Labels, test_size=0.3)
+    source, source_test, sourceLabels, sourceLabels_test = train_test_split(sample2,
+                                                                            sample2Labels, test_size=0.3)
     if iEqualizeMixtureCoeffs:
         # we sample with replacement new source samples from the current source samples, according to the target mixtures
         numUniqueLabels = len(set(targetLabels_train))
-        
-        hist_train = np.histogram(targetLabels_train, bins = numUniqueLabels,density = False)[0] / len(targetLabels_train)        
+
+        hist_train = np.histogram(targetLabels_train, bins = numUniqueLabels,density = False)[0] / len(targetLabels_train)
         sourceInds_train = np.zeros(0)
         n_training = source.shape[0]
         a_train = np.arange(n_training)
@@ -54,8 +54,8 @@ def getCytofMMDDataFromCsv(sample1Path, sample1LabelsPath, sample2Path, sample2L
         sourceInds_train = sourceInds_train.astype(int)
         source = source[sourceInds_train]
         sourceLabels = sourceLabels[sourceInds_train]
-        
-        hist_test = np.histogram(targetLabels_test, bins = numUniqueLabels,density = False)[0] / len(targetLabels_test)        
+
+        hist_test = np.histogram(targetLabels_test, bins = numUniqueLabels,density = False)[0] / len(targetLabels_test)
         sourceInds_test = np.zeros(0)
         n_test = source_test.shape[0]
         a_test = np.arange(n_test)
@@ -82,7 +82,7 @@ def standard_scale(X_train, X_test, X_trainCalib, X_testCalib):
 
 def getCytoRNADataFromCsv(dataPath, batchesPath, batch1, batch2, trainPct = 0.8):
     data = genfromtxt(dataPath, delimiter=',', skip_header=0)
-    batches = genfromtxt(batchesPath, delimiter=',', skip_header=0) 
+    batches = genfromtxt(batchesPath, delimiter=',', skip_header=0)
     source = data[batches == batch1]
     target = data[batches == batch2]
     n_source = source.shape[0]
@@ -96,4 +96,3 @@ def getCytoRNADataFromCsv(dataPath, batchesPath, batch1, batch2, trainPct = 0.8)
     target_train = target[p[:cutPt]]
     target_test = target[p[cutPt:]]
     return source_train, source_test, target_train, target_test
-    
