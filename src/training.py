@@ -4,7 +4,6 @@ import numpy as np
 import keras.backend as K
 import tensorflow as tf
 
-#	TODO: test this code
 #	using an autoencoder to remove noise
 def denoise(source_data, target_data, max_zeros = 1, p_keep = 0.8, encoding_dim = 25, l2_penalty = 1e-2, verbose = False):
 	from keras.layers import Input, Dense
@@ -115,6 +114,7 @@ def create_network(input_dim, layer_sizes = [25, 25, 25], l2_penalty = 1e-2):
 	mmd_net = Model(inputs = input_block, outputs = output_block)
 	return (input_block, output_block), mmd_net
 
+#	TODO: maybe give some flexibility for the loss function ?
 def train_network(mmd_net, source, target, last_block, epochs = 500, batch_size = 512, validation_split = 0.1, verbose = False):
 	from keras.callbacks import LearningRateScheduler, EarlyStopping
 	from keras.optimizers import rmsprop
