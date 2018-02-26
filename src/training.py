@@ -4,19 +4,56 @@ import numpy as np
 import keras.backend as K
 import tensorflow as tf
 
-#	TODO: write this function
+#	TODO: test this code
 #	using an autoencoder to remove noise
-def denoise(source_data, target_data, max_zeros = 1):
+def denoise(source_data, target_data, max_zeros = 1, p_keep = 0.8, encoding_dim = 25, l2_penalty = 1e-2):
+	from keras.layers import Input, Dense
+	from keras.models import Model
+
+	from keras.regularizers import l2
+
+	from Monitoring import monitor
+	from keras.callbacks import EarlyStopping
+
 	def remove_zeros(data):
 		to_keep = np.sum((data == 0), axis = 1) <= max_zeros
 		return data[to_keep]
 
+	def chain(prev_cell, activation = 'relu'):
+		return Dense(encoding_dim,
+			activation = activation,
+			W_regularizer = l2(l2_penalty)
+			)(prev_cell)
+
+	input_dim = target_data.shape[1]
+
 	less_zeros = map(remove_zeros, [source_data, target_data])
 	ae_target = np.concatenate(less_zeros, axis = 0)
-#	TODO
+	np.random.shuffle(ae_target)
 
-#	TODO: add necessary parameters passed to denoise
-def load_data(source_path, target_path, use_denoise = False):
+	ae_data = ae_target * np.random.binomial(n = 1, p = p_keep, size = ae_target.shape)
+
+	input_cell = Input(shape = (input_dim,))
+	encoded = chain(chain(input_cell))
+	decoded = chain(encoded, 'linear')
+
+	autoencoder = Model(input = input_cell, output = decoded)
+	autoencoder.compile(optimizer = 'rmsprop', loss = 'mse')
+
+	callbacks = [monitor()]
+	callbacks.append(EarlyStopping(monitor = 'val_loss', patience = 25, mode = 'auto'))
+
+	autoencoder.fit(ae_data,
+		ae_target,
+		epochs = 500,
+		batch_size = 128,
+		shuffle = True,
+		validation_split = 0.1,
+		callbacks = callbacks)
+
+	return [ autoencoder.predict(data) for data in [source_data, target_data] ]
+
+def load_data(source_path, target_path, use_denoise = False, denoise_params = {}):
 	def load_and_log(path):
 		from numpy import genfromtxt as load_csv
 		from Calibration_Util.DataHandler import preProcessCytofData as pp
@@ -31,8 +68,12 @@ def load_data(source_path, target_path, use_denoise = False):
 
 	source, target = map(load_and_log, [source_path, target_path])
 	if use_denoise:
-	#	TODO: call denoise
-		pass
+	#	not the most elegant solution, but not the least practical either...
+		default_params = { "max_zeros": 1, "p_keep": 0.8, "encoding_dim": 25, "l2_penalty": 1e-2 }
+		for key, value in default_params.iter():
+			if not key in denoise_params:
+				denoise_params[key] = value
+		source, target = denoise(source, target, **denoise_params)
 
 	return preprocess(source, target)
 
