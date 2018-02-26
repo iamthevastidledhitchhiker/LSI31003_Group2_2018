@@ -73,7 +73,7 @@ def create_network(input_dim, layer_sizes = [25, 25, 25], l2_penalty = 1e-2):
 	mmd_net = Model(inputs = input_block, outputs = output_block)
 	return (input_block, output_block), mmd_net
 
-def train_network(mmd_net, source, target, last_block, verbose = False):
+def train_network(mmd_net, source, target, last_block, epochs = 500, batch_size = 512, validation_split = 0.1, verbose = False):
 	from keras.callbacks import LearningRateScheduler, EarlyStopping
 	from keras.optimizers import rmsprop
 
@@ -98,8 +98,12 @@ def train_network(mmd_net, source, target, last_block, verbose = False):
 
 	mmd_net.fit(source,
 		labels,
-		epochs = 500,
-		batch_size = 512,
-		validation_split = 0.1,
+		epochs = epochs,
+		batch_size = batch_size,
+		validation_split = validation_split,
 		verbose = verbose,
 		callbacks = callbacks)
+
+#	trivial, but why not...
+def apply_network(mmd_net, data):
+	return mmd_net.predict(data)
