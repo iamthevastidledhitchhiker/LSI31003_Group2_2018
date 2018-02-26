@@ -36,22 +36,9 @@ def load_data(source_path, target_path, use_denoise = False):
 
 	return preprocess(source, target)
 
-#	TODO: split this function into create_network and train_network functions
-def train_network(source, target, layer_sizes = [25, 25], l2_penalty = 1e-2):
-	from keras.layers import Input#, merge
+def create_network(input_dim, layer_sizes = [25, 25, 25], l2_penalty = 1e-2):
+	from keras.layers import Input
 	from keras.models import Model
-	from keras.callbacks import LearningRateScheduler, EarlyStopping
-	from keras.optimizers import rmsprop
-
-	from CostFunctions import MMD
-	from Monitoring import monitorMMD
-
-	def step_decay(epoch, initial_lrate = 0.001, drop = 0.1, epochs_drop = 150.0):
-		return initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
-
-	def mmd(y_true, y_pred):
-	#	'block3_output' and 'target' will be already part of this namespace
-		return MMD(block3_output, target, MMDTargetValidation_split = 0.1).KerasCost(y_true, y_pred)
 
 #	I heard that 'blockchain' and 'machine learning' are the current buzz-words,
 #	so here is a blockchain in a machine learning context.
@@ -79,20 +66,33 @@ def train_network(source, target, layer_sizes = [25, 25], l2_penalty = 1e-2):
 
 		return add([layer2, block_in])
 
-	input_dim = target.shape[1]
+	input_block = output_block = Input(shape = (input_dim, ))
+	for size in layer_sizes:
+		output_block = block_chain(output_block, size)
 
-	calibrated_input = Input(shape = (input_dim, ))
-	block1_output = block_chain(calibrated_input, layer_sizes[0])
-	block2_output = block_chain(block1_output, layer_sizes[1])
-	block3_output = block_chain(block2_output, layer_sizes[1])
+	mmd_net = Model(inputs = input_block, outputs = output_block)
+	return (input_block, output_block), mmd_net
 
-	mmd_net = Model(inputs = calibrated_input, outputs = block3_output)
-	lrate = LearningRateScheduler(step_decay)
+def train_network(mmd_net, source, target, last_block, verbose = False):
+	from keras.callbacks import LearningRateScheduler, EarlyStopping
+	from keras.optimizers import rmsprop
+
+	from CostFunctions import MMD
+	from Monitoring import monitorMMD
+
+	def step_decay(epoch, initial_lrate = 0.001, drop = 0.1, epochs_drop = 150.0):
+		return initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
+
+	def mmd(y_true, y_pred):
+	#	'last_block' and 'target' are already part of this namespace
+		return MMD(last_block, target, MMDTargetValidation_split = 0.1).KerasCost(y_true, y_pred)
+
+	learning_rate = LearningRateScheduler(step_decay)
 	mmd_net.compile(optimizer = rmsprop(lr = 0.0), loss = mmd)
 	K.get_session().run(tf.global_variables_initializer())
 
 	labels = np.zeros(source.shape[0])
-	callbacks = [lrate]
+	callbacks = [learning_rate]
 	callbacks.append(monitorMMD(source, target, mmd_net.predict))
 	callbacks.append(EarlyStopping(monitor = 'val_loss', patience = 50, mode = 'auto'))
 
@@ -101,7 +101,5 @@ def train_network(source, target, layer_sizes = [25, 25], l2_penalty = 1e-2):
 		epochs = 500,
 		batch_size = 512,
 		validation_split = 0.1,
-		verbose = True,
+		verbose = verbose,
 		callbacks = callbacks)
-
-	return mmd_net
