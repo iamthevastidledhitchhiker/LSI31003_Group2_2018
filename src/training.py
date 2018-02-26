@@ -6,7 +6,7 @@ import tensorflow as tf
 
 #	TODO: test this code
 #	using an autoencoder to remove noise
-def denoise(source_data, target_data, max_zeros = 1, p_keep = 0.8, encoding_dim = 25, l2_penalty = 1e-2):
+def denoise(source_data, target_data, max_zeros = 1, p_keep = 0.8, encoding_dim = 25, l2_penalty = 1e-2, verbose = False):
 	from keras.layers import Input, Dense
 	from keras.models import Model
 
@@ -27,8 +27,8 @@ def denoise(source_data, target_data, max_zeros = 1, p_keep = 0.8, encoding_dim 
 
 	input_dim = target_data.shape[1]
 
-	less_zeros = map(remove_zeros, [source_data, target_data])
-	ae_target = np.concatenate(less_zeros, axis = 0)
+	s, t = map(remove_zeros, [source_data, target_data])
+	ae_target = np.concatenate([s, t], axis = 0)
 	np.random.shuffle(ae_target)
 
 	ae_data = ae_target * np.random.binomial(n = 1, p = p_keep, size = ae_target.shape)
@@ -49,6 +49,7 @@ def denoise(source_data, target_data, max_zeros = 1, p_keep = 0.8, encoding_dim 
 		batch_size = 128,
 		shuffle = True,
 		validation_split = 0.1,
+		verbose = False,
 		callbacks = callbacks)
 
 	return [ autoencoder.predict(data) for data in [source_data, target_data] ]
@@ -69,8 +70,8 @@ def load_data(source_path, target_path, use_denoise = False, denoise_params = {}
 	source, target = map(load_and_log, [source_path, target_path])
 	if use_denoise:
 	#	not the most elegant solution, but not the least practical either...
-		default_params = { "max_zeros": 1, "p_keep": 0.8, "encoding_dim": 25, "l2_penalty": 1e-2 }
-		for key, value in default_params.iter():
+		default_params = { "max_zeros": 1, "p_keep": 0.8, "encoding_dim": 25, "l2_penalty": 1e-2, "verbose": False }
+		for key, value in default_params.items():
 			if not key in denoise_params:
 				denoise_params[key] = value
 		source, target = denoise(source, target, **denoise_params)
