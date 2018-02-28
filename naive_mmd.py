@@ -30,6 +30,6 @@ def mmd(source, target):
 	n, m = float(len(source)), float(len(target))
 	term1 = sum([ k(xi, xj) for xi in source for xj in source ])
 	term2 = sum([ k(xi, yj) for xi in source for yj in target ])
-	term3 = sum([ k(yi, yj) for yi in source for yj in source ])
+	term3 = sum([ k(yi, yj) for yi in target for yj in target ])
 
 	return term1 / sq(n) - 2 * term2 / (n * m) + term3 / sq(m)
