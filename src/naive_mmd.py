@@ -1,27 +1,30 @@
 def mmd(source, target):
-	from math import exp
+	from math import exp, sqrt
 
 	def sq(x):
 		return x * x
 
-	def avg(xs):
+	def average(xs):
 		return sum(xs) / float(len(xs))
 
 	def median(xs):
 		return xs[len(xs) / 2]
 
+	def product(x, y):
+		return sum([ sq(x[i] - y[i]) for i in range(len(x)) ])
+
 	def k(x, y):
 		def gauss(var):
-			return exp(sq((x - y) / float(var)))
+			return exp(product(x, y) / sq(float(var)))
 
 		return sum(map(gauss, [p / 2.0, p, 2 * p]))
 
 	def compute_p(xs):
 		def get_dists(i):
-			return [ abs(xs[i] - xs[j]) for j in len(xs) ]
+			return [ sqrt(product(xs[i], xs[j])) for j in range(len(xs)) ]
 
 	#	index 0 is the distance of the point with itself
-		dists25 = [ average(sorted(get_dists(i))[1:26]) for i in len(xs) ]
+		dists25 = [ average(sorted(get_dists(i))[1:26]) for i in range(len(xs)) ]
 		return median(dists25)
 
 #	param for the gaussian variances ; 'm' in the paper
