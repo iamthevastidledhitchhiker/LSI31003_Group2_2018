@@ -8,7 +8,7 @@ def mmd(source, target):
 		return sum(xs) / float(len(xs))
 
 	def median(xs):
-		return xs[len(xs) / 2]
+		return sorted(xs)[int(len(xs) / 2)]
 
 	def product(x, y):
 		return sum([ sq(x[i] - y[i]) for i in range(len(x)) ])
