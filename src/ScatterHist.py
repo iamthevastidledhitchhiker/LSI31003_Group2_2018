@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import NullFormatter
 
-def scatterHist(x1,x2, y1,y2, axis1='', axis2=''):
+def scatterHist(x1,x2, y1,y2, axis1='', axis2='', title=''):
     nullfmt = NullFormatter()         # no labels
     
     # definitions for the axes
@@ -33,7 +33,8 @@ def scatterHist(x1,x2, y1,y2, axis1='', axis2=''):
     
     # the scatter plot:
     axScatter.scatter(x1, x2, color = 'blue', s=3)
-    axScatter.scatter(y1, y2, color = 'red', s=3) 
+    axScatter.scatter(y1, y2, color = 'red', s=3)
+        
 
 
     # now determine nice limits by hand:
@@ -59,6 +60,6 @@ def scatterHist(x1,x2, y1,y2, axis1='', axis2=''):
     axHisty.set_yticklabels([])
     axScatter.set_xlabel(axis1, fontsize=15)
     axScatter.set_ylabel(axis2, fontsize=15)
-    
+    plt.title(title)
 
     plt.show()
